@@ -1,0 +1,137 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+apply plugin: 'kotlin-android-extensions'
+apply plugin: 'kotlin-kapt'
+apply plugin: 'androidx.navigation.safeargs.kotlin'
+
+def localProperties = new Properties()
+localProperties.load(new FileInputStream(rootProject.file("local.properties")))
+android {
+
+    compileSdkVersion 29
+    buildToolsVersion "29.0.0"
+    dataBinding {
+        enabled = true
+    }
+
+    gradle.projectsEvaluated {
+        tasks.withType(JavaCompile) {
+            options.compilerArgs << "-Xmaxerrs" << "500" // or whatever number you want
+        }
+    }
+
+    configurations.all {
+        resolutionStrategy.eachDependency { DependencyResolveDetails details ->
+            def requested = details.requested
+            if (requested.group == "androidx") {
+                if (!requested.name.startsWith("multidex")) {
+                    details.useVersion "${targetSdkVersion}.+"
+                }
+            }
+        }
+    }
+
+
+    defaultConfig {
+        applicationId "org.example.mjworkspace.myapplication"
+        minSdkVersion 21
+        targetSdkVersion 29
+        versionCode 1
+        versionName "1.0"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        vectorDrawables.useSupportLibrary true
+        buildConfigField "String", "TMDB_API_KEY", localProperties['TMDB_API_KEY']
+
+        javaCompileOptions {
+            annotationProcessorOptions {
+                arguments = [
+                        "room.schemaLocation": "$projectDir/schemas".toString(),
+                        "room.incremental"   : "true"
+                ]
+            }
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility = '1.8'
+        targetCompatibility = '1.8'
+    }
+
+    tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
+        kotlinOptions {
+            jvmTarget = "1.8"
+        }
+    }
+
+    androidExtensions {
+        experimental = true
+    }
+}
+
+dependencies {
+    def applicationDependencies = rootProject.ext.mainApplication
+    def unitTestDependencies = rootProject.ext.unitTesting
+    def acceptanceTestDependencies = rootProject.ext.acceptanceTesting
+
+    // Compile time dependencies
+    kapt applicationDependencies.daggerKapt
+    kapt applicationDependencies.daggerAndroidKapt
+    kapt applicationDependencies.glideCompilerKapt
+    kapt applicationDependencies.roomCompilerKapt
+    kapt applicationDependencies.lifecycleComponentsKapt
+    kapt applicationDependencies.moshiKapt
+
+    // Application dependencies
+    implementation applicationDependencies.kotlin
+    implementation applicationDependencies.kotlinCoroutines
+    implementation applicationDependencies.kotlinCoroutinesAndroid
+    implementation applicationDependencies.appCompat
+    implementation applicationDependencies.cardview
+    implementation applicationDependencies.constraintLayout
+    implementation applicationDependencies.fragment
+    implementation applicationDependencies.dagger
+    implementation applicationDependencies.daggerAndroid
+    implementation applicationDependencies.daggerAndroidSupport
+    implementation applicationDependencies.glide
+    implementation applicationDependencies.ktx
+    implementation applicationDependencies.ktxActivity
+    implementation applicationDependencies.lifecycleComponents
+    implementation applicationDependencies.lifecycleExtensions
+    implementation applicationDependencies.lifecycleFragment
+    implementation applicationDependencies.lifecycleViewModelSavedState
+    implementation applicationDependencies.livedataCoroutines
+    implementation applicationDependencies.material
+    implementation applicationDependencies.materialDialogs
+    implementation applicationDependencies.moshi
+    implementation applicationDependencies.moshiConverter
+    implementation applicationDependencies.navigationRuntime
+    implementation applicationDependencies.navigationFragment
+    implementation applicationDependencies.navigationUI
+    implementation applicationDependencies.okhttp
+    implementation applicationDependencies.okhttpLoggingInterceptor
+    implementation applicationDependencies.paging
+    implementation applicationDependencies.recyclerview
+    implementation applicationDependencies.retrofit
+    implementation applicationDependencies.room
+    implementation applicationDependencies.roomKtx
+    implementation applicationDependencies.swipeRefreshLayout
+    implementation applicationDependencies.timber
+
+    // Unit test dependencies
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    testImplementation unitTestDependencies.junit
+    androidTestImplementation unitTestDependencies.junitAndroidx
+
+    // Acceptance test dependencies
+    androidTestImplementation acceptanceTestDependencies.espresso
+
+    // AssistedInject(not recommended)
+    // compileOnly "com.squareup.inject:assisted-inject-annotations-dagger2:0.5.2"
+    // kapt "com.squareup.inject:assisted-inject-processor-dagger2:0.5.2"
+}
